@@ -1,0 +1,21 @@
+{
+  "name": "thehostingtool/core",
+  "description": "TheHostingTool is a billing system designed for webhosts to be powerfull, customizeable, and secure",
+  "keywords": [
+    "billing",
+    "webhost builling",
+    "webhosting",
+    "webhost",
+    "hosting"
+  ],
+  "homepage": "https://thehostingtool.com",
+  "license": "MIT",
+  "support": {
+    "issues": "https://github.com/TheHostingTool/Core/issues",
+    "source": "https://github.com/TheHostingTool/Core",
+    "docs": "http://docs.thehostingtool.com"
+  },
+  "require": {
+    "php": ">=7.0.0"
+  }
+}
