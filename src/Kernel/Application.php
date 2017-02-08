@@ -90,6 +90,13 @@ class Application extends Container implements ApplicationContract
     protected $storagePath;
 
     /**
+     * The path of the themes directory for storing themes
+     *
+     * @var string
+     */
+    protected $themesPath;
+
+    /**
      * Create a new TheHostingTool application instance.
      *
      * @param string|null $basePath
@@ -273,6 +280,15 @@ class Application extends Container implements ApplicationContract
     }
 
     /**
+     * Get the path to the themes directory
+     *
+     * @return string
+     */
+    public function themesPath() {
+        return $this->themesPath ?: $this->basePath.DIRECTORY_SEPARATOR.'themes';
+    }
+
+    /**
      * Set the storage directory.
      *
      * @param string $path
@@ -282,6 +298,19 @@ class Application extends Container implements ApplicationContract
     {
         $this->storagePath = $path;
         $this->instance('path.storage', $path);
+        return $this;
+    }
+
+    /**
+     * Sets the themes directory
+     *
+     * @param $path
+     * @return $this
+     */
+    public function useThemesPath($path)
+    {
+        $this->themesPath = $path;
+        $this->instance('path.themes', $path);
         return $this;
     }
 
