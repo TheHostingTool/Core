@@ -56,5 +56,9 @@
       "src/helpers.php"
     ]
   },
-  "minimum-stability": "beta"
+  "extra": {
+      "branch-alias": {
+          "dev-master": "0.1.x-dev"
+      }
+  }
 }
