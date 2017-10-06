@@ -55,5 +55,6 @@
     "files": [
       "src/helpers.php"
     ]
-  }
+  },
+  "minimum-stability": "beta"
 }
