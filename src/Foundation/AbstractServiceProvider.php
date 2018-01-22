@@ -7,7 +7,7 @@
  * @license   MIT
  */
 
-namespace TheHostingTool\Kernel;
+namespace TheHostingTool\Foundation;
 
 use Illuminate\Support\ServiceProvider;
 

@@ -7,7 +7,7 @@
  * @license   MIT
  */
 
-namespace TheHostingTool\Http\Handler;
+namespace TheHostingTool\Http;
 
 use TheHostingTool\Http\Controller\ControllerInterface;
 use Illuminate\Contracts\Container\Container;
@@ -63,5 +63,4 @@ class ControllerRouteHandler
 		}
 		return $controller;
 	}
-
 }

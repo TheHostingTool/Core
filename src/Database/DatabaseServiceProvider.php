@@ -9,8 +9,8 @@
 
 namespace TheHostingTool\Database;
 
-use TheHostingTool\Kernel\AbstractServiceProvider;
-use TheHostingTool\Kernel\Application;
+use TheHostingTool\Foundation\AbstractServiceProvider;
+use TheHostingTool\Foundation\Application;
 use Illuminate\Database\ConnectionResolver;
 use Illuminate\Database\Connectors\ConnectionFactory;
 use PDO;

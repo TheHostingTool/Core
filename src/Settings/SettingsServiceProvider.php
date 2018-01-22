@@ -9,7 +9,7 @@
 
 namespace TheHostingTool\Settings;
 
-use TheHostingTool\Kernel\AbstractServiceProvider;
+use TheHostingTool\Foundation\AbstractServiceProvider;
 
 class SettingsServiceProvider extends AbstractServiceProvider
 {

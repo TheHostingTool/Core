@@ -9,15 +9,12 @@
 
 namespace TheHostingTool\Http;
 
-use TheHostingTool\Kernel\Application;
-
-class AbstractUrlGenerator
+class RouteCollectionUrlGenerator
 {
-
 	/**
-	 * @var Application
+	 * @var string|null
 	 */
-	protected $app;
+	protected $baseUrl;
 
 	/**
 	 * @var RouteCollection
@@ -25,17 +22,12 @@ class AbstractUrlGenerator
 	protected $routes;
 
 	/**
-	 * @var string|null
-	 */
-	protected $path;
-
-	/**
-	 * @param Application $app
+	 * @param string $baseUrl
 	 * @param RouteCollection $routes
 	 */
-	public function __construct(Application $app, RouteCollection $routes)
+	public function __construct($baseUrl, RouteCollection $routes)
 	{
-		$this->app = $app;
+		$this->baseUrl = $baseUrl;
 		$this->routes = $routes;
 	}
 
@@ -46,11 +38,11 @@ class AbstractUrlGenerator
 	 * @param array $parameters
 	 * @return string
 	 */
-	public function toRoute($name, $parameters = [])
+	public function route($name, $parameters = [])
 	{
 		$path = $this->routes->getPath($name, $parameters);
 		$path = ltrim($path, '/');
-		return $this->toBase().'/'.$path;
+		return $this->baseUrl.'/'.$path;
 	}
 
 	/**
@@ -59,9 +51,9 @@ class AbstractUrlGenerator
 	 * @param string $path
 	 * @return string
 	 */
-	public function toPath($path)
+	public function path($path)
 	{
-		return $this->toBase().'/'.$path;
+		return $this->baseUrl.'/'.$path;
 	}
 
 	/**
@@ -69,9 +61,8 @@ class AbstractUrlGenerator
 	 *
 	 * @return string
 	 */
-	public function toBase()
+	public function base()
 	{
-		return $this->app->url($this->path);
+		return $this->baseUrl;
 	}
-
 }

@@ -13,9 +13,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 interface ControllerInterface
 {
-	/**
-	 * @param ServerRequestInterface $request
-	 * @return \Psr\Http\Message\ResponseInterface
-	 */
-	public function handle(ServerRequestInterface $request);
+    /**
+     * @param ServerRequestInterface $request
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function handle(ServerRequestInterface $request);
 }

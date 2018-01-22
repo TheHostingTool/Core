@@ -7,7 +7,7 @@
  * @license   MIT
  */
 
-namespace TheHostingTool\Http\Handler;
+namespace TheHostingTool\Http;
 
 use Illuminate\Contracts\Container\Container;
 

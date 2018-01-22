@@ -9,9 +9,9 @@
 
 namespace TheHostingTool\Api;
 
-use TheHostingTool\Http\AbstractUrlGenerator;
+use TheHostingTool\Http\RouteCollectionUrlGenerator;
 
-class UrlGenerator extends AbstractUrlGenerator
+class UrlGenerator extends RouteCollectionUrlGenerator
 {
 	/**
 	 * {@inheritdoc}

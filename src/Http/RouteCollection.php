@@ -66,6 +66,7 @@ class RouteCollection
 		foreach ($routeDatas as $routeData) {
 			$this->dataGenerator->addRoute($method, $routeData, $handler);
 		}
+
 		$this->reverse[$name] = $routeDatas;
 		return $this;
 	}
@@ -89,7 +90,7 @@ class RouteCollection
 			array_walk($parts, [$this, 'fixPathPart'], $parameters);
 			return '/'.ltrim(implode('', $parts), '/');
 		}
+
 		throw new \RuntimeException("Route $name not found");
 	}
-
 }

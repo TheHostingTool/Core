@@ -9,7 +9,7 @@
 
 namespace TheHostingTool\Api;
 
-use TheHostingTool\Kernel\AbstractServiceProvider;
+use TheHostingTool\Foundation\AbstractServiceProvider;
 use TheHostingTool\Http\RouteCollection;
 
 class ApiServiceProvider extends AbstractServiceProvider
@@ -37,9 +37,7 @@ class ApiServiceProvider extends AbstractServiceProvider
 	public function boot()
 	{
 		$this->populateRoutes($this->app->make('tht.api.routes'));
-
 	}
-
 
 	/**
 	 * Populate the API routes.
