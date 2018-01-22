@@ -284,7 +284,7 @@ class Application extends Container implements ApplicationContract
      */
     protected function bindPathsInContainer()
     {
-        foreach (['base', 'public', 'storage'] as $path) {
+        foreach (['base', 'public', 'storage', 'styles', 'plugins'] as $path) {
             $this->instance('path.'.$path, $this->{$path.'Path'}());
         }
     }
@@ -336,7 +336,7 @@ class Application extends Container implements ApplicationContract
 	 */
 	public function stylesPath()
 	{
-		return $this->stylesPath ?: $this->stylesPath.DIRECTORY_SEPARATOR.'styles';
+		return $this->stylesPath ?: $this->basePath.DIRECTORY_SEPARATOR.'styles';
 	}
 
     /**
