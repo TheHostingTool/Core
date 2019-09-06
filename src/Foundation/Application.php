@@ -17,6 +17,7 @@ use Illuminate\Routing\RoutingServiceProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use TheHostingTool\Foundation\Twig\TwigServiceProvider;
 
 class Application extends Container implements ApplicationContract
 {
@@ -226,7 +227,7 @@ class Application extends Container implements ApplicationContract
     {
         $this->register(new EventServiceProvider($this));
         $this->register(new RoutingServiceProvider($this));
-        //$this->register(new TwigServiceProvider($this));
+        $this->register(new TwigServiceProvider($this));
     }
 
     /**

@@ -21,7 +21,7 @@ class InstallServiceProvider extends AbstractServiceProvider
         $router = $this->app->make('router');
 
         $router->group(['namespace' => '\\TheHostingTool\\Install\\Controllers'], function(\Illuminate\Routing\Router $router) {
-            
+            $router->get('install', 'InstallerController@welcome');
         });
     }
 
