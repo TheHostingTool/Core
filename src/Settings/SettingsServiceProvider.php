@@ -10,22 +10,25 @@
 namespace TheHostingTool\Settings;
 
 use TheHostingTool\Foundation\AbstractServiceProvider;
+use Illuminate\Database\ConnectionInterface;
 
 class SettingsServiceProvider extends AbstractServiceProvider
 {
+
     /**
      * {@inheritdoc}
      */
     public function register()
     {
-        $this->app->singleton('TheHostingTool\Settings\SettingsRepositoryInterface', function () {
+        $this->app->singleton(SettingsRepositoryInterface::class, function () {
             return new MemoryCacheSettingsRepository(
                 new DatabaseSettingsRepository(
-                    $this->app->make('Illuminate\Database\ConnectionInterface')
+                    $this->app->make(ConnectionInterface::class)
                 )
             );
         });
 
-        $this->app->alias('TheHostingTool\Settings\SettingsRepositoryInterface', 'tht.settings');
+        $this->app->alias(SettingsRepositoryInterface::class, 'tht.settings');
     }
+
 }

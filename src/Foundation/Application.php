@@ -9,35 +9,38 @@
 
 namespace TheHostingTool\Foundation;
 
+use Closure;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Events\EventServiceProvider;
+use Illuminate\Routing\RoutingServiceProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
 class Application extends Container implements ApplicationContract
 {
+
     /**
      * The TheHostingTool version.
      *
      * @var string
      */
-    const VERSION = '0.1.0-alpha.1';
+    const VERSION = '2.0.0-alpha.1';
 
     /**
-     * The base path for the TheHostingTool installation.
+     * The base path for the TheHostingTool installation
      *
      * @var string
      */
     protected $basePath;
 
     /**
-     * The public path for the TheHostingTool installation.
+     * Indicates if TheHostingTool has been bootstrapped before
      *
-     * @var string
+     * @var bool
      */
-    protected $publicPath;
+    protected $hasBeenBootstrapped = false;
 
     /**
      * Indicates if the application has "booted".
@@ -82,117 +85,57 @@ class Application extends Container implements ApplicationContract
     protected $deferredServices = [];
 
     /**
-     * The custom storage path defined by the developer.
+     * The path to TheHostingTool styles folder
+     *
+     * @var string
+     */
+    protected $stylesPath;
+
+    /**
+     * The path to TheHostingTool plugins folder
+     *
+     * @var string
+     */
+    protected $pluginsPath;
+
+    /**
+     * The path to the cache folder
+     *
+     * @var string
+     */
+    protected $cachePath;
+
+    /**
+     * The path to the storage folder
      *
      * @var string
      */
     protected $storagePath;
 
-	/**
-	 * The path to the plugins folder
-	 *
-	 * @var string
-	 */
-	protected $pluginsPath;
+    /**
+     * A custom vendor path to find dependencies in non-standard environments
+     *
+     * @var string
+     */
+    protected $vendorPath;
 
-	/**
-	 * The path to the styles folder
-	 *
-	 * @var string
-	 */
-	protected $stylesPath;
 
     /**
-     * Create a new TheHostingTool application instance.
+     * The application namespace
      *
-     * @param string|null $basePath
-     * @param string|null $publicPath
+     * @var string
      */
-    public function __construct($basePath = null, $publicPath = null)
+    protected $namespace;
+
+    public function __construct(?string $basePath = null)
     {
-        $this->registerBaseBindings();
-
-        $this->registerBaseServiceProviders();
-
-        $this->registerCoreContainerAliases();
-
         if ($basePath) {
             $this->setBasePath($basePath);
         }
 
-        if ($publicPath) {
-            $this->setPublicPath($publicPath);
-        }
-
-    }
-
-    /**
-     * Determine if TheHostingTool has been installed.
-     *
-     * @return bool
-     */
-    public function isInstalled()
-    {
-        return $this->bound('tht.config');
-    }
-
-    public function isUpToDate()
-    {
-        $settings = $this->make('TheHostingTool\Settings\SettingsRepositoryInterface');
-
-        try {
-            $version = $settings->get('version');
-        } finally {
-            $isUpToDate = isset($version) && $version === $this->version();
-        }
-
-        return $isUpToDate;
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function config($key, $default = null)
-    {
-        return array_get($this->make('tht.config'), $key, $default);
-    }
-
-    /**
-     * Check if TheHostingTool is in debug mode.
-     *
-     * @return bool
-     */
-    public function inDebugMode()
-    {
-        return ! $this->isInstalled() || $this->config('debug');
-    }
-
-    /**
-     * Get the URL to the TheHostingTool installation.
-     *
-     * @param string $path
-     * @return string
-     */
-    public function url($path = null)
-    {
-        $config = $this->isInstalled() ? $this->make('tht.config') : [];
-        $url = array_get($config, 'url', array_get($_SERVER, 'REQUEST_URI'));
-
-        if (is_array($url)) {
-            if (isset($url[$path])) {
-                return $url[$path];
-            }
-
-            $url = $url['base'];
-        }
-
-        if ($path) {
-            $url .= '/'.array_get($config, "paths.$path", $path);
-        }
-
-        return $url;
+        $this->registerBaseBindings();
+        $this->registerBaseServiceProviders();
+        $this->registerCoreContainerAliases();
     }
 
     /**
@@ -206,92 +149,204 @@ class Application extends Container implements ApplicationContract
     }
 
     /**
-     * Register the basic bindings into the container.
+     * Determine if TheHostingTool has been installed
+     *
+     * @return bool
+     */
+    public function isInstalled()
+    {
+        return $this->bound('tht.config');
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function config($key, $default = null)
+    {
+        return Arr::get($this->make('tht.config'), $key, $default);
+    }
+
+    /**
+     * Check if TheHostingTool is in debug mode.
+     *
+     * @return bool
+     */
+    public function inDebugMode()
+    {
+        return $this->config('debug', true);
+    }
+
+    /**
+     * Get the URL to the TheHostingTool installation.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function url($path = null)
+    {
+        $config = $this->make('tht.config');
+        $url = Arr::get($config, 'url', Arr::get($_SERVER, 'REQUEST_URI'));
+
+        if (is_array($url)) {
+            if (isset($url[$path])) {
+                return $url[$path];
+            }
+
+            $url = $url['base'];
+        }
+
+        if ($path) {
+            $url .= '/'.Arr::get($config, "paths.$path", $path);
+        }
+
+        return $url;
+    }
+
+    /**
+     * Register the basic bindings into the container
+     *
+     * @return void
      */
     protected function registerBaseBindings()
     {
         static::setInstance($this);
 
         $this->instance('app', $this);
-
-        $this->instance('Illuminate\Container\Container', $this);
+        $this->instance(Container::class, $this);
     }
 
     /**
      * Register all of the base service providers.
+     *
+     * @return void
      */
     protected function registerBaseServiceProviders()
     {
         $this->register(new EventServiceProvider($this));
+        $this->register(new RoutingServiceProvider($this));
+        //$this->register(new TwigServiceProvider($this));
     }
 
     /**
-     * Set the base path for the application.
+     * Run the given array of bootstrap classes.
+     *
+     * @param array $bootstrappers
+     * @return void
+     */
+    public function bootstrapWith(array $bootstrappers)
+    {
+        $this->hasBeenBootstrapped = true;
+
+        foreach ($bootstrappers as $bootstrapper) {
+            $this['events']->dispatch('bootstrapping: '.$bootstrapper, [$this]);
+
+            $this->make($bootstrapper)->bootstrap($this);
+
+            $this['events']->dispatch('bootstrapped: '.$bootstrapper, [$this]);
+        }
+    }
+
+    /**
+     * Register a callback to run before a bootstrapper
+     *
+     * @param string $bootstrapper
+     * @param Closure $callback
+     * @return void
+     */
+    public function beforeBootstrapping(string $bootstrapper, Closure $callback)
+    {
+        $this['events']->listen('bootstrapping: '.$bootstrapper, $callback);
+    }
+
+    /**
+     * Register a callback to run after a bootstrapper
+     *
+     * @param string $bootstrapper
+     * @param Closure $callback
+     * @return void
+     */
+    public function afterBootstrapping(string $bootstrapper, Closure $callback)
+    {
+        $this['events']->listen('bootstrapped: '.$bootstrapper, $callback);
+    }
+
+    /**
+     * Determine if the application has been bootstrapped before
+     *
+     * @return bool
+     */
+    public function hasBeenBootstrapped()
+    {
+        return $this->hasBeenBootstrapped;
+    }
+
+    /**
+     * Set the base path for the application
      *
      * @param string $basePath
      * @return $this
      */
-    public function setBasePath($basePath)
+    public function setBasePath(string $basePath)
     {
         $this->basePath = rtrim($basePath, '\/');
+
         $this->bindPathsInContainer();
         return $this;
     }
 
     /**
-     * Set the public path for the application.
+     * Set the path to the styles folder
      *
-     * @param string $publicPath
+     * @param string $stylesPath
      * @return $this
      */
-    public function setPublicPath($publicPath)
+    public function setStylesPath(string $stylesPath)
     {
-        $this->publicPath = rtrim($publicPath, '\/');
+        $this->stylesPath = rtrim($stylesPath, '\/');
+
         $this->bindPathsInContainer();
         return $this;
     }
 
-	/**
-	 * Sets the plugin path for the application
-	 *
-	 * @param string $path
-	 * @return $this
-	 */
-	public function setPluginPath($path)
-	{
-		$this->pluginsPath = $path;
-		$this->instance('path.plugins', $path);
-		return $this;
-	}
+    /**
+     * Set the path to the plugins folder
+     *
+     * @param string $pluginsPath
+     * @return $this
+     */
+    public function setPluginsPath(string $pluginsPath)
+    {
+        $this->pluginsPath = rtrim($pluginsPath, '\/');
 
-	/**
-	 * Sets the styles path for the application
-	 *
-	 * @param string $path
-	 * @return $this
-	 */
-	public function setStylesPath($path)
-	{
-		$this->stylesPath = $path;
-		$this->instance('path.styles', $path);
-		return $this;
-	}
+        $this->bindPathsInContainer();
+        return $this;
+    }
 
     /**
-     * Bind all of the application paths in the container.
+     * Set the path to the cache folder
      *
-     * @return void
+     * @param string $cachePath
+     * @return $this
      */
+    public function setCachePath(string $cachePath)
+    {
+        $this->cachePath = rtrim($cachePath,'\/');
+
+        $this->bindPathsInContainer();
+        return $this;
+    }
+
     protected function bindPathsInContainer()
     {
-        foreach (['base', 'public', 'storage', 'styles', 'plugins'] as $path) {
+        foreach (['base', 'storage', 'styles', 'plugins', 'cache', 'lang', 'config'] as $path) {
             $this->instance('path.'.$path, $this->{$path.'Path'}());
         }
     }
 
     /**
-     * Get the base path of the Laravel installation.
-     *
+     * Get the base path of the TheHostingTool installation
      * @return string
      */
     public function basePath()
@@ -300,17 +355,7 @@ class Application extends Container implements ApplicationContract
     }
 
     /**
-     * Get the path to the public / web directory.
-     *
-     * @return string
-     */
-    public function publicPath()
-    {
-        return $this->publicPath;
-    }
-
-    /**
-     * Get the path to the storage directory.
+     * Get the path to the storage directory
      *
      * @return string
      */
@@ -319,102 +364,167 @@ class Application extends Container implements ApplicationContract
         return $this->storagePath ?: $this->basePath.DIRECTORY_SEPARATOR.'storage';
     }
 
-	/**
-	 * Get the path to the plugins directory
-	 *
-	 * @return string
-	 */
-	public function pluginsPath()
-	{
-		return $this->pluginsPath ?: $this->basePath.DIRECTORY_SEPARATOR.'plugins';
-	}
-
-	/**
-	 * Get the path to the styles directory
-	 *
-	 * @return string
-	 */
-	public function stylesPath()
-	{
-		return $this->stylesPath ?: $this->basePath.DIRECTORY_SEPARATOR.'styles';
-	}
+    /**
+     * Get the path to the styles directory
+     *
+     * @return string
+     */
+    public function stylesPath()
+    {
+        return $this->stylesPath ?: $this->basePath.DIRECTORY_SEPARATOR.'styles';
+    }
 
     /**
-     * Set the storage directory.
+     * Get the path to the plugins directory
+     *
+     * @return string
+     */
+    public function pluginsPath()
+    {
+        return $this->pluginsPath ?: $this->basePath.DIRECTORY_SEPARATOR.'plugins';
+    }
+
+    /**
+     * Get the path to the cache directory
+     *
+     * @return string
+     */
+    public function cachePath()
+    {
+        return $this->cachePath ?: $this->basePath.DIRECTORY_SEPARATOR.'cache';
+    }
+
+    /**
+     * Get the path to the vendor directory where dependencies are installed.
+     *
+     * @return string
+     */
+    public function vendorPath()
+    {
+        return $this->vendorPath ?: $this->basePath.DIRECTORY_SEPARATOR.'vendor';
+    }
+
+    /**
+     * Get the path to the application configuration files
+     *
+     * @param string $path
+     * @return string
+     */
+    public function configPath($path = '')
+    {
+        return $this->basePath.DIRECTORY_SEPARATOR.'config'.($path ? DIRECTORY_SEPARATOR.$path : $path);
+    }
+
+    /**
+     * Get the path to the language files
+     * @return string
+     */
+    public function langPath()
+    {
+        return $this->basePath.DIRECTORY_SEPARATOR.'lang';
+    }
+
+    /**
+     * Set the storage directory
      *
      * @param string $path
      * @return $this
      */
-    public function useStoragePath($path)
+    public function useStoragePath(string $path)
     {
         $this->storagePath = $path;
+
         $this->instance('path.storage', $path);
         return $this;
     }
 
     /**
-     * Get or check the current application environment.
+     * Set the vendor directory
      *
-     * @param mixed
-     * @return string
+     * @param string $path
+     * @return $this
      */
-    public function environment()
+    public function useVendorPath(string $path)
     {
-        if (func_num_args() > 0) {
-            $patterns = is_array(func_get_arg(0)) ? func_get_arg(0) : func_get_args();
+        $this->vendorPath = $path;
 
-            foreach ($patterns as $pattern) {
-                if (Str::is($pattern, $this['env'])) {
-                    return true;
-                }
-            }
+        $this->instance('path.vendor', $path);
+        return $this;
+    }
 
-            return false;
+    /**
+     * Get or check the current application environment
+     *
+     * @param string|array $environments
+     * @return string|bool
+     */
+    public function environment(...$environments)
+    {
+        if (count($environments) > 0) {
+            $patterns = is_array($environments[0]) ? $environments[0] : $environments;
+
+            return Str::is($patterns, $this['env']);
         }
 
         return $this['env'];
     }
 
     /**
-     * Determine if we are running in the console.
+     * Determine if application is in local environment
+     *
+     * @return bool
+     */
+    public function isLocal()
+    {
+        return $this['env'] === 'local';
+    }
+
+    /**
+     * Determine if application is in production environment
+     *
+     * @return bool
+     */
+    public function isProduction()
+    {
+        return $this['env'] === 'production';
+    }
+
+    /**
+     * Determine if the application is running in the console
      *
      * @return bool
      */
     public function runningInConsole()
     {
-        return php_sapi_name() == 'cli';
+        return php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg';
     }
 
     /**
-     * Determine if we are running unit tests.
+     * Determine if the application is running unit tests.
      *
      * @return bool
      */
     public function runningUnitTests()
     {
-        return $this['env'] == 'testing';
+        return $this['env'] === 'testing';
     }
 
-    /**
-     * Register all of the configured providers.
-     *
-     * @return void
-     */
     public function registerConfiguredProviders()
     {
+        // TODO: Implement registerConfiguredProviders() method.
     }
 
     /**
      * Register a service provider with the application.
      *
-     * @param ServiceProvider|string $provider
-     * @param array $options
-     * @param bool $force
-     * @return ServiceProvider
+     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @param  bool   $force
+     *
+     * @return \Illuminate\Support\ServiceProvider
      */
-    public function register($provider, $options = [], $force = false)
+    public function register($provider, $force = false)
     {
-        if ($registered = $this->getProvider($provider) && ! $force) {
+        if (($registered = $this->getProvider($provider)) && !$force) {
             return $registered;
         }
 
@@ -422,23 +532,18 @@ class Application extends Container implements ApplicationContract
         // application instance automatically for the developer. This is simply
         // a more convenient way of specifying your service provider classes.
         if (is_string($provider)) {
-            $provider = $this->resolveProviderClass($provider);
+            $provider = $this->resolveProvider($provider);
         }
 
-        $provider->register();
-
-        // Once we have registered the service we will iterate through the options
-        // and set each of them on the application so they will be available on
-        // the actual loading of the service objects and for developer usage.
-        foreach ($options as $key => $value) {
-            $this[$key] = $value;
+        if (method_exists($provider, 'register')) {
+            $provider->register();
         }
 
         $this->markAsRegistered($provider);
 
         // If the application has already booted, we will call this boot method on
         // the provider class so it has an opportunity to do its boot logic and
-        // will be ready for any usage by the developer's application logics.
+        // will be ready for any usage by this developer's application logic.
         if ($this->booted) {
             $this->bootProvider($provider);
         }
@@ -449,14 +554,25 @@ class Application extends Container implements ApplicationContract
     /**
      * Get the registered service provider instance if it exists.
      *
-     * @param ServiceProvider|string $provider
-     * @return ServiceProvider|null
+     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @return \Illuminate\Support\ServiceProvider|null
      */
     public function getProvider($provider)
     {
+        return array_values($this->getProviders($provider))[0] ?? null;
+    }
+
+    /**
+     * Get the registered service provider instances if any exist.
+     *
+     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @return array
+     */
+    public function getProviders($provider)
+    {
         $name = is_string($provider) ? $provider : get_class($provider);
 
-        return Arr::first($this->serviceProviders, function ($key, $value) use ($name) {
+        return Arr::where($this->serviceProviders, function ($value) use ($name) {
             return $value instanceof $name;
         });
     }
@@ -464,10 +580,10 @@ class Application extends Container implements ApplicationContract
     /**
      * Resolve a service provider instance from the class name.
      *
-     * @param string $provider
-     * @return ServiceProvider
+     * @param  string  $provider
+     * @return \Illuminate\Support\ServiceProvider
      */
-    public function resolveProviderClass($provider)
+    public function resolveProvider($provider)
     {
         return new $provider($this);
     }
@@ -475,20 +591,19 @@ class Application extends Container implements ApplicationContract
     /**
      * Mark the given provider as registered.
      *
-     * @param ServiceProvider $provider
+     * @param  \Illuminate\Support\ServiceProvider  $provider
      * @return void
      */
     protected function markAsRegistered($provider)
     {
-        $this['events']->fire($class = get_class($provider), [$provider]);
-
         $this->serviceProviders[] = $provider;
-
-        $this->loadedProviders[$class] = true;
+        $this->loadedProviders[get_class($provider)] = true;
     }
 
     /**
      * Load and boot all of the remaining deferred providers.
+     *
+     * @return void
      */
     public function loadDeferredProviders()
     {
@@ -505,7 +620,8 @@ class Application extends Container implements ApplicationContract
     /**
      * Load the provider for a deferred service.
      *
-     * @param string $service
+     * @param  string  $service
+     * @return void
      */
     public function loadDeferredProvider($service)
     {
@@ -526,8 +642,9 @@ class Application extends Container implements ApplicationContract
     /**
      * Register a deferred provider and service.
      *
-     * @param string $provider
-     * @param string $service
+     * @param  string  $provider
+     * @param  string|null  $service
+     * @return void
      */
     public function registerDeferredProvider($provider, $service = null)
     {
@@ -540,7 +657,7 @@ class Application extends Container implements ApplicationContract
 
         $this->register($instance = new $provider($this));
 
-        if (! $this->booted) {
+        if (!$this->booted) {
             $this->booting(function () use ($instance) {
                 $this->bootProvider($instance);
             });
@@ -552,15 +669,15 @@ class Application extends Container implements ApplicationContract
      *
      * (Overriding Container::make)
      *
-     * @param string $abstract
-     * @param array $parameters
+     * @param  string  $abstract
+     * @param  array  $parameters
      * @return mixed
      */
     public function make($abstract, array $parameters = [])
     {
         $abstract = $this->getAlias($abstract);
 
-        if (isset($this->deferredServices[$abstract])) {
+        if (isset($this->deferredServices[$abstract]) && !isset($this->instances[$abstract])) {
             $this->loadDeferredProvider($abstract);
         }
 
@@ -572,7 +689,7 @@ class Application extends Container implements ApplicationContract
      *
      * (Overriding Container::bound)
      *
-     * @param string $abstract
+     * @param  string  $abstract
      * @return bool
      */
     public function bound($abstract)
@@ -605,20 +722,19 @@ class Application extends Container implements ApplicationContract
         // for any listeners that need to do work after this initial booting gets
         // finished. This is useful when ordering the boot-up processes we run.
         $this->fireAppCallbacks($this->bootingCallbacks);
-
         array_walk($this->serviceProviders, function ($p) {
             $this->bootProvider($p);
         });
 
         $this->booted = true;
-
         $this->fireAppCallbacks($this->bootedCallbacks);
     }
 
     /**
      * Boot the given service provider.
      *
-     * @param ServiceProvider $provider
+     * @param  \Illuminate\Support\ServiceProvider  $provider
+     *
      * @return mixed
      */
     protected function bootProvider(ServiceProvider $provider)
@@ -626,12 +742,14 @@ class Application extends Container implements ApplicationContract
         if (method_exists($provider, 'boot')) {
             return $this->call([$provider, 'boot']);
         }
+
+        return null;
     }
 
     /**
      * Register a new boot listener.
      *
-     * @param mixed $callback
+     * @param  mixed  $callback
      * @return void
      */
     public function booting($callback)
@@ -642,7 +760,7 @@ class Application extends Container implements ApplicationContract
     /**
      * Register a new "booted" listener.
      *
-     * @param mixed $callback
+     * @param  mixed  $callback
      * @return void
      */
     public function booted($callback)
@@ -657,7 +775,7 @@ class Application extends Container implements ApplicationContract
     /**
      * Call the booting callbacks for the application.
      *
-     * @param array $callbacks
+     * @param  array  $callbacks
      * @return void
      */
     protected function fireAppCallbacks(array $callbacks)
@@ -668,43 +786,38 @@ class Application extends Container implements ApplicationContract
     }
 
     /**
-     * Get the path to the cached "compiled.php" file.
-     *
-     * @return string
-     */
-    public function getCachedCompilePath()
-    {
-        return $this->basePath().'/bootstrap/cache/compiled.php';
-    }
-
-    /**
-     * Get the path to the cached services.json file.
-     *
-     * @return string
-     */
-    public function getCachedServicesPath()
-    {
-        return $this->basePath().'/bootstrap/cache/services.json';
-    }
-
-	/**
-	 * Get the path to the cached packages.php file.
-	 *
-	 * @return string
-	 */
-	public function getCachedPackagesPath()
-	{
-		return $this->storagePath().'/framework/packages.php';
-	}
-
-    /**
      * Determine if the application is currently down for maintenance.
      *
      * @return bool
      */
     public function isDownForMaintenance()
     {
-        return $this->config('offline');
+        // TODO: read settings to determine if maintenance mode is on
+        return false;
+    }
+
+    /**
+     * Register a terminating callback with the application.
+     *
+     * @param  \Closure  $callback
+     * @return $this
+     */
+    public function terminating(\Closure $callback)
+    {
+        $this->terminatingCallbacks[] = $callback;
+        return $this;
+    }
+
+    /**
+     * Terminate the application.
+     *
+     * @return void
+     */
+    public function terminate()
+    {
+        foreach ($this->terminatingCallbacks as $terminating) {
+            $this->call($terminating);
+        }
     }
 
     /**
@@ -762,41 +875,65 @@ class Application extends Container implements ApplicationContract
 
     /**
      * Register the core class aliases in the container.
+     *
+     * @return void
      */
     public function registerCoreContainerAliases()
     {
         $aliases = [
-            'app'                  => ['TheHostingTool\Foundation\Application', 'Illuminate\Contracts\Container\Container', 'Illuminate\Contracts\Foundation\Application'],
-            'blade.compiler'       => 'Illuminate\View\Compilers\BladeCompiler',
-            'cache'                => ['Illuminate\Cache\CacheManager', 'Illuminate\Contracts\Cache\Factory'],
-            'cache.store'          => ['Illuminate\Cache\Repository', 'Illuminate\Contracts\Cache\Repository'],
-            'config'               => ['Illuminate\Config\Repository', 'Illuminate\Contracts\Config\Repository'],
-            'db'                   => 'Illuminate\Database\DatabaseManager',
-            'events'               => ['Illuminate\Events\Dispatcher', 'Illuminate\Contracts\Events\Dispatcher'],
-            'files'                => 'Illuminate\Filesystem\Filesystem',
-            'filesystem'           => ['Illuminate\Filesystem\FilesystemManager', 'Illuminate\Contracts\Filesystem\Factory'],
-            'filesystem.disk'      => 'Illuminate\Contracts\Filesystem\Filesystem',
-            'filesystem.cloud'     => 'Illuminate\Contracts\Filesystem\Cloud',
-            'hash'                 => 'Illuminate\Contracts\Hashing\Hasher',
-            'mailer'               => ['Illuminate\Mail\Mailer', 'Illuminate\Contracts\Mail\Mailer', 'Illuminate\Contracts\Mail\MailQueue'],
-            'validator'            => ['Illuminate\Validation\Factory', 'Illuminate\Contracts\Validation\Factory'],
-            'view'                 => ['Illuminate\View\Factory', 'Illuminate\Contracts\View\Factory'],
+            'app' => [self::class, \Illuminate\Contracts\Container\Container::class, \Psr\Container\ContainerInterface::class],
+            'events' => [\Illuminate\Events\Dispatcher::class, \Illuminate\Contracts\Events\Dispatcher::class],
+            'files' => [\Illuminate\Filesystem\Filesystem::class],
+            'filesystem' => [\Illuminate\Filesystem\FilesystemManager::class, \Illuminate\Contracts\Filesystem\Factory::class],
+            'filesystem.disk' => [\Illuminate\Contracts\Filesystem\Filesystem::class],
+            'filesystem.cloud' => [\Illuminate\Contracts\Filesystem\Cloud::class],
+            'redirect' => [\Illuminate\Routing\Redirector::class],
+            'request' => [\Illuminate\Http\Request::class, \Symfony\Component\HttpFoundation\Request::class],
+            'router' => [\Illuminate\Routing\Route::class, \Illuminate\Contracts\Routing\Registrar::class, \Illuminate\Contracts\Routing\BindingRegistrar::class],
+            'url' => [\Illuminate\Routing\UrlGenerator::class, \Illuminate\Contracts\Routing\UrlGenerator::class]
         ];
 
-        foreach ($aliases as $key => $aliases) {
-            foreach ((array) $aliases as $alias) {
+        foreach ($aliases as $key => $aliasedTo) {
+            foreach ($aliasedTo as $alias) {
                 $this->alias($key, $alias);
             }
         }
     }
 
-    /**
-     * Flush the container of all bindings and resolved instances.
-     */
     public function flush()
     {
         parent::flush();
 
+        $this->buildStack = [];
         $this->loadedProviders = [];
+        $this->bootedCallbacks = [];
+        $this->bootingCallbacks = [];
+        $this->deferredServices = [];
+        $this->reboundCallbacks = [];
+        $this->serviceProviders = [];
+        $this->resolvingCallbacks = [];
+        $this->afterResolvingCallbacks = [];
+        $this->globalResolvingCallbacks = [];
     }
+
+    /**
+     * Get the path to the cached services.php file.
+     *
+     * @return string
+     */
+    public function getCachedServicesPath()
+    {
+        return '';
+    }
+
+    /**
+     * Get the path to the cached packages.php file.
+     *
+     * @return string
+     */
+    public function getCachedPackagesPath()
+    {
+        return '';
+    }
+
 }

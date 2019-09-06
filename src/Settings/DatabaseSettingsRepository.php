@@ -22,7 +22,7 @@ class DatabaseSettingsRepository implements SettingsRepositoryInterface
 
     public function all()
     {
-        return $this->database->table('settings')->lists('value', 'key');
+        return $this->database->table('settings')->pluck('value', 'key')->all();
     }
 
     public function get($key, $default = null)
@@ -43,8 +43,8 @@ class DatabaseSettingsRepository implements SettingsRepositoryInterface
         $query->$method(compact('key', 'value'));
     }
 
-    public function delete($keyLike)
+    public function delete($key)
     {
-        $this->database->table('settings')->where('key', 'like', $keyLike)->delete();
+        $this->database->table('settings')->where('key', $key)->delete();
     }
 }
