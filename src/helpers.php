@@ -26,3 +26,13 @@ if (!function_exists('app')) {
 		return Container::getInstance()->make($make, $parameters);
 	}
 }
+
+if (!function_exists('render_template'))
+{
+    function render_template(string $name, array $context = [])
+    {
+        $twig = app(\Twig\Environment::class);
+
+        return $twig->render($name, $context);
+    }
+}
