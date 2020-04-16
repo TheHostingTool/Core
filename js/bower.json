@@ -1,7 +1,0 @@
-{
-  "name": "thehostingtool",
-  "dependencies": {
-    "jquery": "^3.3.1",
-    "bootstrap": "^4.0.0"
-  }
-}
