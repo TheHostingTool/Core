@@ -1,0 +1,6 @@
+services:
+  _defaults:
+    autoconfigure: true
+
+  tht.command.version:
+    class: TheHostingTool\CoreBundle\Command\VersionCommand

@@ -1,15 +1,15 @@
 <?php
 
-namespace TheHostingTool\CoreBundle;
+namespace TheHostingTool\Bundle\CoreBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
-use TheHostingTool\CoreBundle\DependencyInjection\CoreExtension;
+use TheHostingTool\Bundle\CoreBundle\DependencyInjection\CoreExtension;
 
 class CoreBundle extends Bundle
 {
     /**
-     * TheHostingTool Core Version
+     * TheHostingTool CoreBundle Version
      */
     public const VERSION = "1.0.0";
 
@@ -17,4 +17,5 @@ class CoreBundle extends Bundle
     {
         return new CoreExtension();
     }
+
 }
