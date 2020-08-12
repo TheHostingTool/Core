@@ -16,6 +16,8 @@ class PathResolver
 
     /**
      * Default paths for TheHostingTool installation.
+     * @param string $public the public path
+     * @return array
      */
     public static function defaultPaths(string $public): array
     {
@@ -30,7 +32,8 @@ class PathResolver
             'web' => '%site%/' . $public,
             'uploads' => '%web%/uploads',
             'themes' => '%web%/themes',
-            'plugins' => '%web%/plugins'
+            'plugins' => '%web%/plugins',
+            'plugins_config' => '%config%/plugins'
         ];
     }
 

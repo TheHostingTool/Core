@@ -29,7 +29,7 @@ class UserUpdateEvent
      *
      * @param string $type
      * @param string $identifier
-     * @param string $ip_address
+     * @param string|null $ip_address
      */
     public function __construct(string $type, string $identifier, string $ip_address = null)
     {
