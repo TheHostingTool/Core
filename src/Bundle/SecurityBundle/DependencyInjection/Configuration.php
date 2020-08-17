@@ -14,6 +14,7 @@ class Configuration implements ConfigurationInterface
         $rootNode = $builder->getRootNode();
 
         $this->addResetPasswordSection($rootNode);
+        $this->addObjectsSection($rootNode);
         return $builder;
     }
 
